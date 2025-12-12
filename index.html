@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexArch Digital - Hardware & Software Solution</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Framer Motion -->
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4ade80; 
+            border-radius: 4px;
+        }
+        
+        .matrix-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .pro-font {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Glitch Effect Utility */
+        .glitch-text {
+            position: relative;
+        }
+        .glitch-text::before,
+        .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -1px 0 #ff00c1;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim 5s infinite linear alternate-reverse;
+        }
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -1px 0 #00fff9;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim2 5s infinite linear alternate-reverse;
+        }
+        @keyframes glitch-anim {
+            0% { clip: rect(30px, 9999px, 10px, 0); }
+            20% { clip: rect(20px, 9999px, 80px, 0); }
+            40% { clip: rect(60px, 9999px, 40px, 0); }
+            60% { clip: rect(10px, 9999px, 50px, 0); }
+            80% { clip: rect(90px, 9999px, 20px, 0); }
+            100% { clip: rect(40px, 9999px, 70px, 0); }
+        }
+        @keyframes glitch-anim2 {
+            0% { clip: rect(10px, 9999px, 90px, 0); }
+            20% { clip: rect(50px, 9999px, 20px, 0); }
+            40% { clip: rect(20px, 9999px, 60px, 0); }
+            60% { clip: rect(80px, 9999px, 30px, 0); }
+            80% { clip: rect(30px, 9999px, 10px, 0); }
+            100% { clip: rect(70px, 9999px, 50px, 0); }
+        }
+
+        /* Drone Propeller Animation */
+        .spin-fast {
+            animation: spin 0.2s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Heartbeat Animation for Stats */
+        .heartbeat {
+            animation: beat 1.5s infinite;
+        }
+        @keyframes beat {
+            0% { transform: scale(1); }
+            14% { transform: scale(1.1); }
+            28% { transform: scale(1); }
+            42% { transform: scale(1.1); }
+            70% { transform: scale(1); }
+        }
+        
+        /* Utility to hide horizontal scroll */
+        body {
+            overflow-x: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+        const { motion, AnimatePresence } = window.Motion;
+
+        // --- DATA DUMMY UNTUK MODAL ---
+        const modalContent = {
+            smartphone: {
+                title: "Smartphone & Hardware Repair",
+                desc: "Layanan perbaikan presisi tinggi untuk segala kerusakan.",
+                details: [
+                    "Ganti LCD/Touchscreen Original",
+                    "Pergantian Baterai Tanam",
+                    "Service Mesin (IC Power, EMMC, Short)",
+                    "Unlock Jaringan & Software",
+                    "Recovery Data HP Mati Total"
+                ],
+                price: "Mulai dari Rp 50.000",
+                icon: "Smartphone"
+            },
+            webdev: {
+                title: "Web & System Development",
+                desc: "Bangun identitas digital bisnis Anda dengan teknologi terkini.",
+                details: [
+                    "Company Profile Website",
+                    "Aplikasi Kasir (POS) Custom",
+                    "Sistem HRIS & Absensi",
+                    "E-Commerce & Toko Online",
+                    "Landing Page High Conversion"
+                ],
+                price: "Konsultasi Gratis",
+                icon: "Code"
+            },
+            network: {
+                title: "Network & Security",
+                desc: "Amankan aset dan stabilkan koneksi bisnis Anda.",
+                details: [
+                    "Instalasi CCTV (IP Camera/Analog)",
+                    "Setting Mikrotik & Manajemen Bandwidth",
+                    "Instalasi Server Lokal",
+                    "Pemasangan Access Point Kantor",
+                    "Maintenance Jaringan Bulanan"
+                ],
+                price: "Survey Lokasi Gratis",
+                icon: "Wifi"
+            }
+        };
+
+        // --- MATRIX RAIN COMPONENT ---
+        const MatrixRain = () => {
+            const canvasRef = useRef(null);
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                const resizeCanvas = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+                resizeCanvas();
+                const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
+                const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                const nums = '0123456789';
+                const alphabet = katakana + latin + nums;
+                const fontSize = 16;
+                let columns = Math.floor(canvas.width / fontSize);
+                const drops = [];
+                for (let x = 0; x < columns; x++) drops[x] = 1;
+                const draw = () => {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#0F0';
+                    ctx.font = fontSize + 'px monospace';
+                    for (let i = 0; i < drops.length; i++) {
+                        const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                        drops[i]++;
+                    }
+                };
+                const interval = setInterval(draw, 30);
+                const handleResize = () => { resizeCanvas(); columns = Math.floor(canvas.width / fontSize); drops.length = 0; for (let x = 0; x < columns; x++) drops[x] = 1; };
+                window.addEventListener('resize', handleResize);
+                return () => { clearInterval(interval); window.removeEventListener('resize', handleResize); };
+            }, []);
+            return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full z-0 opacity-20 pointer-events-none" />;
+        };
+
+        // --- DRONE BOT COMPONENT ---
+        const DroneBot = ({ theme, delay = 0, initialX, initialY, colorOverride }) => {
+            // Note: Start positions are fallback for desktop
+            const [position, setPosition] = useState({ x: initialX || window.innerWidth / 2, y: initialY || 200 });
+            const [isFleeing, setIsFleeing] = useState(false);
+            const [wanderTarget, setWanderTarget] = useState({ x: initialX, y: initialY });
+            
+            const [showText, setShowText] = useState(false);
+            const textTimeoutRef = useRef(null);
+            
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    if (!isFleeing) {
+                        const padding = 100;
+                        const newX = Math.random() * (window.innerWidth - padding * 2) + padding;
+                        const newY = Math.random() * (window.innerHeight - padding * 2) + padding;
+                        setWanderTarget({ x: newX, y: newY });
+                    }
+                }, 4000 + delay); 
+
+                return () => clearInterval(interval);
+            }, [isFleeing, delay]);
+
+            useEffect(() => {
+                const handleMouseMove = (e) => {
+                    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                    
+                    if (!clientX || !clientY) return;
+
+                    const dx = clientX - position.x;
+                    const dy = clientY - position.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const fleeRadius = 150; 
+                    
+                    if (distance < fleeRadius) {
+                        setIsFleeing(true);
+                        
+                        if (!showText) {
+                            setShowText(true);
+                            if (textTimeoutRef.current) clearTimeout(textTimeoutRef.current);
+                            textTimeoutRef.current = setTimeout(() => {
+                                setShowText(false);
+                            }, 2000); 
+                        }
+
+                        const angle = Math.atan2(dy, dx);
+                        const moveX = Math.cos(angle) * 20; 
+                        const moveY = Math.sin(angle) * 20;
+                        setPosition(prev => ({ x: prev.x - moveX, y: prev.y - moveY }));
+                    } else {
+                        setIsFleeing(false);
+                        setPosition(prev => ({
+                            x: prev.x + (wanderTarget.x - prev.x) * 0.02,
+                            y: prev.y + (wanderTarget.y - prev.y) * 0.02
+                        }));
+                    }
+                };
+                
+                window.addEventListener('mousemove', handleMouseMove);
+                
+                return () => {
+                    window.removeEventListener('mousemove', handleMouseMove);
+                };
+            }, [position, wanderTarget, showText]);
+
+            const botColor = colorOverride ? colorOverride : (theme === 'matrix' ? '#4ade80' : '#3b82f6');
+            const glowColor = `0 0 15px ${botColor}`;
+
+            return (
+                <motion.div 
+                    className="fixed z-50 pointer-events-none hidden md:block" 
+                    animate={{ 
+                        x: position.x - 30, 
+                        y: position.y - 30,
+                        y: [position.y - 30, position.y - 40, position.y - 30],
+                        rotate: isFleeing ? [0, 15, -15, 0] : [0, 5, -5, 0],
+                    }}
+                    transition={{ 
+                        y: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                        rotate: { duration: isFleeing ? 0.5 : 4, repeat: Infinity, ease: "easeInOut" }
+                    }}
+                >
+                    <div className="relative w-16 h-16 md:w-20 md:h-20"> 
+                        {/* Propellers */}
+                        <div className="absolute top-0 left-0 w-8 h-8 flex items-center justify-center"><div className="w-8 md:w-10 h-1 bg-gray-400 spin-fast rounded-full opacity-50"></div></div>
+                        <div className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center"><div className="w-8 md:w-10 h-1 bg-gray-400 spin-fast rounded-full opacity-50"></div></div>
+                        <div className="absolute bottom-0 left-0 w-8 h-8 flex items-center justify-center"><div className="w-8 md:w-10 h-1 bg-gray-400 spin-fast rounded-full opacity-50"></div></div>
+                        <div className="absolute bottom-0 right-0 w-8 h-8 flex items-center justify-center"><div className="w-8 md:w-10 h-1 bg-gray-400 spin-fast rounded-full opacity-50"></div></div>
+
+                        {/* Cross Frame */}
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 md:w-16 h-2 bg-gray-700 rotate-45 rounded"></div>
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 md:w-16 h-2 bg-gray-700 -rotate-45 rounded"></div>
+
+                        {/* Body */}
+                        <div 
+                            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 md:w-10 h-8 md:h-10 rounded-xl flex items-center justify-center bg-gray-900 border-2 z-10"
+                            style={{ borderColor: botColor, boxShadow: glowColor }}
+                        >
+                            <div className="w-full flex justify-center gap-1">
+                                <motion.div animate={{ height: [4, 1, 4] }} transition={{ repeat: Infinity, duration: 3, delay: Math.random() }} className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full" style={{ backgroundColor: botColor }}></motion.div>
+                                <motion.div animate={{ height: [4, 1, 4] }} transition={{ repeat: Infinity, duration: 3, delay: Math.random() }} className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full" style={{ backgroundColor: botColor }}></motion.div>
+                            </div>
+                        </div>
+
+                        <motion.div 
+                            className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 w-8 md:w-10 h-2 bg-black/20 blur-md rounded-full"
+                            animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
+                            transition={{ duration: 0.5, repeat: Infinity }}
+                        />
+                    </div>
+                    
+                    <AnimatePresence>
+                        {showText && (
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0, y: 10 }} 
+                                animate={{ opacity: 1, scale: 1, y: 0 }} 
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                className={`absolute top-[-35px] left-1/2 transform -translate-x-1/2 text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap z-50 ${theme === 'matrix' ? 'bg-green-500 text-black' : 'bg-white text-slate-800 border border-gray-200'}`}
+                            >
+                                {["Eits!", "Minggir bang!", "Waduh!", "Sinyal ilang!", "Jangan nabrak!"][Math.floor(Math.random()*5)]}
+                                <div className={`absolute bottom-[-4px] left-1/2 transform -translate-x-1/2 w-2 h-2 rotate-45 ${theme === 'matrix' ? 'bg-green-500' : 'bg-white border-r border-b border-gray-200'}`}></div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </motion.div>
+            );
+        };
+
+        // --- FLOATING SERVICE CARD ---
+        const FloatingCard = ({ type, x, y, delay, isMatrix, onClick }) => {
+            const data = modalContent[type];
+            const iconColor = isMatrix ? 'text-green-400' : 'text-blue-600';
+            const bgClass = isMatrix ? 'bg-black/90 border-green-500' : 'bg-white/95 border-blue-200';
+            const randomDuration = useMemo(() => 8 + Math.random() * 4, []);
+
+            return (
+                <motion.div
+                    className={`absolute p-3 md:p-5 rounded-2xl shadow-2xl border cursor-pointer backdrop-blur-md group z-20 w-36 md:w-56 ${bgClass}`} 
+                    style={{ left: x, top: y }}
+                    animate={{ 
+                        y: [0, -20, 15, 0], 
+                        x: [0, 10, -10, 0],
+                        rotate: [0, 1, -1, 0]
+                    }} 
+                    transition={{ 
+                        duration: randomDuration, 
+                        repeat: Infinity, 
+                        delay: delay, 
+                        ease: "easeInOut" 
+                    }}
+                    whileHover={{ scale: 1.1, zIndex: 50, rotate: 0 }}
+                    onClick={() => onClick(type)}
+                >
+                    <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                        <div className={`p-2 md:p-2.5 rounded-xl bg-opacity-20 ${isMatrix ? 'bg-green-500' : 'bg-blue-100'}`}>
+                            <i data-lucide={data.icon} className={iconColor} width="16" height="16"></i>
+                        </div>
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-green-500 animate-pulse ml-auto shadow-[0_0_10px_#4ade80]"></div>
+                    </div>
+                    <h3 className={`font-bold text-xs md:text-base leading-tight ${isMatrix ? 'text-white' : 'text-gray-900'}`}>{data.title}</h3>
+                    <p className={`hidden md:block text-xs mt-2 ${isMatrix ? 'text-gray-400' : 'text-gray-500'}`}>Klik untuk detail layanan</p>
+                    <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-[0_0_30px_rgba(59,130,246,0.4)]`}></div>
+                </motion.div>
+            );
+        };
+
+        // --- MODAL COMPONENT ---
+        const ServiceModal = ({ content, onClose, isMatrix }) => {
+            if (!content) return null;
+            return (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+                    <motion.div 
+                        initial={{ scale: 0.8, opacity: 0, y: 50 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.8, opacity: 0 }}
+                        className={`relative w-full max-w-lg p-6 md:p-8 rounded-3xl border shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden max-h-[90vh] overflow-y-auto ${isMatrix ? 'bg-gray-900 border-green-500 text-green-50' : 'bg-white border-blue-100 text-gray-800'}`}
+                    >
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className={`p-4 rounded-2xl ${isMatrix ? 'bg-green-900/30 text-green-400' : 'bg-blue-50 text-blue-600'}`}>
+                                <i data-lucide={content.icon} width="36" height="36"></i>
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-bold leading-tight">{content.title}</h2>
+                                <p className={`text-sm ${isMatrix ? 'text-gray-400' : 'text-gray-500'}`}>{content.price}</p>
+                            </div>
+                            <button onClick={onClose} className="ml-auto p-2 hover:bg-gray-500/10 rounded-full transition-colors"><i data-lucide="x" width="24"></i></button>
+                        </div>
+                        <div className="mb-8">
+                            <p className="mb-4 font-medium text-lg opacity-90">{content.desc}</p>
+                            <ul className="space-y-3">
+                                {content.details.map((item, idx) => (
+                                    <li key={idx} className="flex items-start gap-3 text-sm"><i data-lucide="check-circle" width="18" className={`mt-0.5 ${isMatrix?'text-green-500':'text-blue-500'}`}></i><span>{item}</span></li>
+                                ))}
+                            </ul>
+                        </div>
+                        <a href={`https://wa.me/6285157362339?text=Halo%20NexArch,%20saya%20ingin%20tanya%20detail%20tentang%20${encodeURIComponent(content.title)}`} target="_blank" className={`block w-full text-center py-4 rounded-xl font-bold text-lg transition-all hover:scale-[1.02] shadow-lg ${isMatrix ? 'bg-green-500 text-black hover:bg-green-400 hover:shadow-green-500/50' : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-500/30'}`}>
+                            Pesan Layanan Ini
+                        </a>
+                    </motion.div>
+                </div>
+            );
+        };
+
+        const services = [
+            { title: "Smartphone Expert", desc: "15+ Tahun pengalaman. Ganti LCD, Baterai, Mati Total.", icon: "Smartphone" },
+            { title: "Web & App Dev", desc: "Landing page, Company Profile, hingga Sistem kompleks.", icon: "Code" },
+            { title: "Laptop & PC Care", desc: "Service hardware, install ulang, upgrade SSD/RAM.", icon: "Monitor" },
+            { title: "CCTV & Network", desc: "Instalasi CCTV, Setting Mikrotik, Jaringan Kantor.", icon: "Wifi" },
+            { title: "Sistem Kasir (POS)", desc: "Aplikasi kasir modern untuk F&B dan Retail.", icon: "Server" },
+            { title: "Software Architect", desc: "Konsultasi sistem IT perusahaan.", icon: "Cpu" },
+        ];
+
+        const stats = [
+            { val: "15+", label: "Tahun Pengalaman", icon: "Clock" },
+            { val: "1000+", label: "Device Diperbaiki", icon: "Smartphone" },
+            { val: "50+", label: "Sistem Dideploy", icon: "Globe" },
+            { val: "24/7", label: "Support Mindset", icon: "Heart" },
+        ];
+
+        const faqs = [
+            { q: "Berapa lama pengerjaan service HP?", a: "Untuk kerusakan ringan (LCD/Baterai) bisa ditunggu 30-60 menit. Untuk mati total butuh pengecekan 1-3 hari." },
+            { q: "Apakah pembuatan website dapat domain gratis?", a: "Ya! Paket standard kami sudah termasuk Domain .com dan Hosting selama 1 tahun." },
+            { q: "Bisa panggil teknisi ke rumah/kantor?", a: "Bisa banget untuk area terjangkau. Terutama untuk setting jaringan dan CCTV." },
+            { q: "Garansinya bagaimana?", a: "Hardware repair garansi hingga 30 hari. Software development garansi bug fixing 3-6 bulan." },
+        ];
+
+        // --- MAIN APP COMPONENT ---
+        const App = () => {
+            const [theme, setTheme] = useState('intro'); 
+            const [activeFaq, setActiveFaq] = useState(null);
+            const [modalData, setModalData] = useState(null);
+            const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+            
+            // UPDATE: State for Scroll detection
+            const [isScrolled, setIsScrolled] = useState(false);
+
+            useEffect(() => {
+                const handleResize = () => setIsMobile(window.innerWidth < 768);
+                
+                // UPDATE: Scroll Listener
+                const handleScroll = () => {
+                    setIsScrolled(window.scrollY > 50);
+                };
+
+                window.addEventListener('resize', handleResize);
+                window.addEventListener('scroll', handleScroll);
+                return () => {
+                    window.removeEventListener('resize', handleResize);
+                    window.removeEventListener('scroll', handleScroll);
+                };
+            }, []);
+            
+            useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
+
+            if (theme === 'intro') {
+                return (
+                    <div className="flex flex-col md:flex-row h-screen w-full overflow-hidden font-sans bg-gray-100 md:bg-transparent">
+                        
+                        {/* CARD STYLE SELECTION FOR MOBILE */}
+                        <div className="md:hidden w-full h-full p-6 flex flex-col gap-6 justify-center">
+                            <h2 className="text-2xl font-bold text-center mb-2 text-slate-800">Pilih Tampilan Anda</h2>
+                            
+                            {/* Pro Card */}
+                            <motion.div 
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setTheme('pro')}
+                                className="flex-1 bg-white rounded-3xl shadow-xl flex flex-col items-center justify-center p-6 border border-gray-100 relative overflow-hidden"
+                            >
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full z-0"></div>
+                                <div className="relative z-10 text-center">
+                                    <div className="bg-blue-100 p-4 rounded-full inline-flex text-blue-600 mb-4"><i data-lucide="shield-check" width="40" height="40"></i></div>
+                                    <h3 className="text-2xl font-bold text-slate-800">Profesional</h3>
+                                    <p className="text-sm text-slate-500 mt-2">Untuk Bisnis & Korporat</p>
+                                </div>
+                            </motion.div>
+
+                            {/* Matrix Card */}
+                            <motion.div 
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setTheme('matrix')}
+                                className="flex-1 bg-black rounded-3xl shadow-xl flex flex-col items-center justify-center p-6 border border-green-900 relative overflow-hidden"
+                            >
+                                <div className="absolute inset-0 opacity-20"><MatrixRain /></div>
+                                <div className="relative z-10 text-center">
+                                    <div className="bg-green-900/40 p-4 rounded-full inline-flex text-green-500 mb-4"><i data-lucide="code" width="40" height="40"></i></div>
+                                    <h3 className="text-2xl font-bold text-green-500 matrix-font">MATRIX</h3>
+                                    <p className="text-sm text-green-800 mt-2">Tech & Gamer Style</p>
+                                </div>
+                            </motion.div>
+                        </div>
+
+                        {/* DESKTOP SPLIT SCREEN */}
+                        <div onClick={() => setTheme('pro')} className="hidden md:flex w-1/2 h-full bg-white flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors duration-500 group relative z-10">
+                            <h2 className="text-4xl font-bold text-gray-900 mb-4 group-hover:scale-110 transition-transform">Profesional</h2>
+                            <p className="text-gray-500 text-center px-4">Clean. Elegan. Corporate.</p>
+                            <div className="mt-8 p-4 rounded-full bg-blue-100 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors"><i data-lucide="shield-check" width="48" height="48"></i></div>
+                        </div>
+                        <div onClick={() => setTheme('matrix')} className="hidden md:flex w-1/2 h-full bg-black flex-col items-center justify-center cursor-pointer hover:bg-gray-900 transition-colors duration-500 group relative border-l border-gray-800">
+                            <MatrixRain />
+                            <h2 className="text-4xl font-bold text-green-500 mb-4 font-mono group-hover:scale-110 transition-transform z-10 glitch-text" data-text="MATRIX MODE">MATRIX MODE</h2>
+                            <p className="text-green-800 text-center px-4 font-mono z-10">Cyber. Canggih. Hacker Vibe.</p>
+                            <div className="mt-8 p-4 rounded-full bg-green-900/30 text-green-500 group-hover:bg-green-500 group-hover:text-black transition-colors z-10"><i data-lucide="code" width="48" height="48"></i></div>
+                        </div>
+                    </div>
+                );
+            }
+
+            const isMatrix = theme === 'matrix';
+            const bgColor = isMatrix ? 'bg-black' : 'bg-slate-50';
+            const textColor = isMatrix ? 'text-green-500' : 'text-slate-800';
+            const cardBg = isMatrix ? 'bg-gray-900/80 border border-green-500/30' : 'bg-white shadow-lg border border-gray-100';
+            const accentColor = isMatrix ? 'text-green-400' : 'text-blue-600';
+            const waLink = "https://wa.me/6285157362339?text=Halo%20NexArch,%20saya%20tertarik%20dengan%20layanan%20Anda.";
+
+            return (
+                <div className={`min-h-screen ${bgColor} ${textColor} transition-colors duration-700 relative overflow-x-hidden ${isMatrix ? 'matrix-font' : 'pro-font'}`}>
+                    <AnimatePresence>
+                        {modalData && <ServiceModal content={modalContent[modalData]} onClose={() => setModalData(null)} isMatrix={isMatrix} />}
+                    </AnimatePresence>
+
+                    {isMatrix && <MatrixRain />}
+                    {!isMatrix && (
+                        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+                            <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-200/40 rounded-full blur-3xl"></div>
+                            <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-purple-200/40 rounded-full blur-3xl"></div>
+                        </div>
+                    )}
+
+                    {/* DRONE BOTS */}
+                    <DroneBot theme={theme} initialX={window.innerWidth / 2} initialY={100} delay={0} />
+                    <DroneBot theme={theme} initialX={window.innerWidth - 100} initialY={500} delay={2000} colorOverride="#f97316" />
+
+                    {/* Navbar */}
+                    <nav className={`fixed w-full z-40 top-0 left-0 backdrop-blur-md ${isMatrix ? 'bg-black/80 border-b border-green-900' : 'bg-white/80 border-b border-gray-200'} px-6 py-4 flex justify-between items-center transition-all duration-300`}>
+                        {/* UPDATE: Added logic to hide this logo on scroll */}
+                        <div className={`text-xl md:text-2xl font-bold tracking-tighter flex items-center gap-2 transition-all duration-500 ${isScrolled ? '-translate-y-20 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
+                            <div className={`w-3 h-3 rounded-full ${isMatrix ? 'bg-green-500 animate-pulse' : 'bg-blue-600'}`}></div>
+                            NexArch<span className={isMatrix ? 'text-white' : 'text-gray-400'}>Digital</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 md:gap-4 ml-auto">
+                            <a href={waLink} target="_blank" className={`hidden md:block px-4 py-2 rounded-full font-bold text-sm transition-all ${isMatrix ? 'bg-green-600 text-black hover:bg-green-400' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>Contact</a>
+                            <button onClick={() => setTheme(isMatrix ? 'pro' : 'matrix')} className="p-2 rounded-full border border-current hover:opacity-70 transition-opacity"><i data-lucide="settings" width="20"></i></button>
+                        </div>
+                    </nav>
+
+                    {/* Hero Section */}
+                    <section className="relative z-10 pt-28 md:pt-32 pb-20 px-6 min-h-screen flex items-center justify-center overflow-hidden">
+                        <div className="max-w-7xl w-full grid md:grid-cols-2 gap-10 md:gap-20 items-center">
+                            
+                            {/* Text Content - UPDATED: Changed from center to left for mobile */}
+                            <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} className="text-left z-20">
+                                <div className={`inline-block px-4 py-1.5 mb-6 text-xs font-bold tracking-wider uppercase rounded-full ${isMatrix ? 'bg-green-900 text-green-300 border border-green-500' : 'bg-blue-100 text-blue-700'}`}>
+                                    Hardware Expert & Software Architect
+                                </div>
+                                <h1 className={`text-5xl md:text-8xl font-black mb-6 md:mb-8 leading-none tracking-tight ${isMatrix ? 'glitch-text' : ''}`} data-text="FUTURE READY">
+                                    Solusi IT <br/>
+                                    <span className={accentColor}>Masa Depan.</span>
+                                </h1>
+                                {/* UPDATED: Reduced font size on mobile (text-sm) & added <br> for mobile */}
+                                <p className={`text-sm md:text-xl mb-8 md:mb-10 max-w-[90%] md:max-w-lg leading-relaxed ${isMatrix ? 'text-green-800' : 'text-gray-600'}`}>
+                                    Menggabungkan presisi hardware dengan kecerdasan software.<br className="block md:hidden" /> Kami memperbaiki, membangun, dan mengamankan aset digital Anda.
+                                </p>
+                                {/* UPDATED: Changed justify-center to justify-start */}
+                                <div className="flex justify-start gap-4">
+                                    <a href="#services" className={`px-6 md:px-8 py-3 md:py-4 rounded-xl font-bold transition-all text-sm md:text-base ${isMatrix ? 'border border-green-500 hover:bg-green-500 hover:text-black' : 'bg-slate-900 text-white hover:bg-slate-800'}`}>Lihat Layanan</a>
+                                    <a href={waLink} className={`px-6 md:px-8 py-3 md:py-4 rounded-xl font-bold flex items-center gap-2 transition-all text-sm md:text-base ${isMatrix ? 'text-green-500 hover:text-white' : 'text-slate-900 hover:text-blue-600'}`}>Konsultasi <i data-lucide="arrow-right" width="16"></i></a>
+                                </div>
+                            </motion.div>
+
+                            {/* TECH REACTOR VISUAL - UPDATE: REDUCED SCALE FOR MOBILE TO PREVENT OVERFLOW */}
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }} className="relative flex justify-center h-[350px] md:h-[500px] scale-[0.60] md:scale-100 origin-center mt-[-60px] md:mt-0">
+                                <div className="relative w-[500px] h-[500px] flex items-center justify-center">
+                                    {/* Rotating Rings */}
+                                    <div className={`absolute w-full h-full border-[1px] rounded-full animate-[spin_10s_linear_infinite] ${isMatrix ? 'border-green-500/20' : 'border-blue-300/30'}`}></div>
+                                    <div className={`absolute w-[80%] h-[80%] border-[2px] border-dashed rounded-full animate-[spin_15s_linear_infinite_reverse] ${isMatrix ? 'border-green-500/30' : 'border-blue-400/30'}`}></div>
+                                    <div className={`absolute w-[60%] h-[60%] border-[4px] border-dotted rounded-full animate-[spin_20s_linear_infinite] ${isMatrix ? 'border-green-500/40' : 'border-blue-500/20'}`}></div>
+                                    
+                                    {/* Core Glow */}
+                                    <div className={`w-32 h-32 rounded-full blur-[50px] animate-pulse ${isMatrix ? 'bg-green-500/40' : 'bg-blue-500/40'}`}></div>
+                                    <div className={`relative z-10 font-black text-2xl tracking-widest animate-pulse ${isMatrix ? 'text-green-500' : 'text-blue-600'}`}>NEXARCH</div>
+
+                                    {/* Floating Cards - UPDATE: ADJUSTED X POSITIONS FOR MOBILE */}
+                                    <FloatingCard 
+                                        type="smartphone" 
+                                        x={isMobile ? "-10%" : "-20%"} 
+                                        y={isMobile ? "0%" : "10%"} 
+                                        delay={0} isMatrix={isMatrix} onClick={setModalData} 
+                                    />
+                                    <FloatingCard 
+                                        type="webdev" 
+                                        x={isMobile ? "50%" : "65%"} 
+                                        y={isMobile ? "5%" : "5%"} 
+                                        delay={1.5} isMatrix={isMatrix} onClick={setModalData} 
+                                    />
+                                    <FloatingCard 
+                                        type="network" 
+                                        x={isMobile ? "15%" : "30%"} 
+                                        y={isMobile ? "70%" : "75%"} 
+                                        delay={2.8} isMatrix={isMatrix} onClick={setModalData} 
+                                    />
+                                </div>
+                            </motion.div>
+                        </div>
+                    </section>
+
+                    {/* Stats Section */}
+                    <section className="relative z-10 py-16 px-6">
+                        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
+                            {stats.map((stat, idx) => (
+                                <motion.div 
+                                    key={idx}
+                                    whileHover={{ y: -10, rotateX: 5, rotateY: 5, scale: 1.05 }}
+                                    className={`p-6 rounded-2xl border text-center relative overflow-hidden group transition-all duration-300 ${isMatrix ? 'bg-black/50 border-green-900 hover:border-green-500' : 'bg-white border-gray-100 shadow-xl hover:shadow-2xl'}`}
+                                >
+                                    <div className={`mb-4 inline-flex p-3 rounded-full heartbeat ${isMatrix ? 'bg-green-900/50 text-green-400' : 'bg-blue-50 text-blue-600'}`}>
+                                        <i data-lucide={stat.icon} width="24" height="24"></i>
+                                    </div>
+                                    <h3 className={`text-2xl md:text-4xl font-black mb-1 ${isMatrix ? 'text-white' : 'text-gray-900'}`}>{stat.val}</h3>
+                                    <p className={`text-[10px] md:text-xs font-bold uppercase tracking-widest ${isMatrix ? 'text-green-600' : 'text-gray-400'}`}>{stat.label}</p>
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* Services Section */}
+                    <section id="services" className="relative z-10 py-24 px-6">
+                        <div className="max-w-6xl mx-auto">
+                            <div className="mb-16 text-center">
+                                <h2 className="text-3xl md:text-5xl font-bold mb-4">Layanan Kami</h2>
+                                <p className={`max-w-2xl mx-auto ${isMatrix ? 'text-green-700' : 'text-gray-600'}`}>Solusi teknologi dari A sampai Z.</p>
+                            </div>
+                            <div className="grid md:grid-cols-3 gap-6">
+                                {services.map((service, idx) => (
+                                    <motion.div key={idx} whileHover={{ y: -10 }} className={`p-8 rounded-2xl relative overflow-hidden group ${cardBg}`}>
+                                        <div className={`mb-6 p-4 rounded-xl inline-block ${isMatrix ? 'bg-green-900/30 text-green-400' : 'bg-blue-50 text-blue-600'}`}><i data-lucide={service.icon} width="32" height="32"></i></div>
+                                        <h3 className="text-xl font-bold mb-3">{service.title}</h3>
+                                        <p className={`text-sm leading-relaxed ${isMatrix ? 'text-green-800 group-hover:text-green-500' : 'text-gray-500'}`}>{service.desc}</p>
+                                        <div className={`absolute bottom-0 left-0 h-1 w-0 group-hover:w-full transition-all duration-500 ${isMatrix ? 'bg-green-500' : 'bg-blue-600'}`}></div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Products Showcase */}
+                    <section className={`relative z-10 py-24 px-6 ${isMatrix ? 'bg-green-900/10' : 'bg-gray-50'}`}>
+                        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-12 items-center">
+                            <div className="md:w-1/2">
+                                <h2 className="text-3xl md:text-4xl font-bold mb-6">Produk Digital</h2>
+                                <div className="space-y-6">
+                                    {[{ name: "HRIS Connect", desc: "Sistem manajemen karyawan & payroll." }, { name: "Resto POS", desc: "Kasir pintar terintegrasi." }, { name: "Asset Mgmt", desc: "Tracking aset perusahaan." }].map((item, idx) => (
+                                        <div key={idx} className={`p-4 rounded-lg border-l-4 ${isMatrix ? 'border-green-500 bg-black/50' : 'border-blue-600 bg-white shadow-sm'}`}>
+                                            <h4 className="font-bold text-lg">{item.name}</h4>
+                                            <p className={`text-sm ${isMatrix ? 'text-green-800' : 'text-gray-500'}`}>{item.desc}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="md:w-1/2 relative">
+                                <div className={`relative p-8 rounded-xl border ${isMatrix ? 'bg-black border-green-500' : 'bg-white border-gray-200 shadow-xl'}`}>
+                                    <div className="flex items-center gap-2 mb-4 border-b pb-4 border-gray-100/10">
+                                        <div className="w-3 h-3 rounded-full bg-red-500"></div><div className="w-3 h-3 rounded-full bg-yellow-500"></div><div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                    </div>
+                                    <div className="space-y-4 font-mono text-sm opacity-80">
+                                        <div className="flex justify-between"><span>Status</span><span className="text-green-500">ONLINE</span></div>
+                                        <div className="h-2 w-full bg-gray-700 rounded-full overflow-hidden"><div className="h-full bg-green-500 w-3/4"></div></div>
+                                        <p className="mt-4 italic">"System 100% Secure."</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* FAQ */}
+                    <section className="relative z-10 py-24 px-6">
+                        <div className="max-w-3xl mx-auto space-y-4">
+                            <h2 className="text-3xl font-bold mb-12 text-center">FAQ</h2>
+                            {faqs.map((faq, idx) => (
+                                <div key={idx} className={`border rounded-lg overflow-hidden transition-all duration-300 ${isMatrix ? 'border-green-800' : 'border-gray-200'}`} onMouseEnter={() => setActiveFaq(idx)} onMouseLeave={() => setActiveFaq(null)}>
+                                    <div className={`p-4 font-bold cursor-pointer flex justify-between items-center ${isMatrix ? 'bg-gray-900' : 'bg-white'}`}>{faq.q} <i data-lucide="chevron-down" width="20"></i></div>
+                                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: activeFaq === idx ? 'auto' : 0, opacity: activeFaq === idx ? 1 : 0 }} className={`px-4 ${isMatrix ? 'bg-black text-green-700' : 'bg-gray-50 text-gray-600'}`}><div className="py-4 border-t border-gray-500/10">{faq.a}</div></motion.div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* ULTRA MINIMALIST FOOTER / CTA */}
+                    <footer className={`relative z-10 py-24 px-6 ${isMatrix ? 'bg-black' : 'bg-gray-50'}`}>
+                        <div className="max-w-4xl mx-auto text-center">
+                            {/* Minimalist Header */}
+                            <h2 className={`text-4xl md:text-5xl font-bold mb-6 tracking-tight ${isMatrix ? 'text-white' : 'text-slate-900'}`}>
+                                Siap untuk <span className={isMatrix ? 'text-green-500' : 'text-blue-600'}>Level Up?</span>
+                            </h2>
+                            <p className={`text-lg mb-10 opacity-70 max-w-xl mx-auto ${isMatrix ? 'text-gray-400' : 'text-slate-600'}`}>
+                                Konsultasikan kebutuhan IT bisnis Anda sekarang. Gratis dan tanpa komitmen.
+                            </p>
+
+                            {/* Ultra Minimalist Button */}
+                            <a 
+                                href={waLink} 
+                                className={`inline-flex items-center gap-3 px-8 py-4 rounded-full font-bold text-sm tracking-wide transition-all transform hover:scale-105 hover:-translate-y-1 shadow-2xl ${isMatrix ? 'bg-green-500 text-black hover:bg-green-400 hover:shadow-[0_10px_40px_-10px_rgba(74,222,128,0.5)]' : 'bg-slate-900 text-white hover:bg-slate-800 hover:shadow-[0_10px_40px_-10px_rgba(30,41,59,0.5)]'}`}
+                            >
+                                <i data-lucide="message-circle" width="18"></i>
+                                <span>Hubungi WhatsApp</span>
+                            </a>
+
+                            <div className="mt-20 pt-10 border-t border-gray-500/10 flex flex-col md:flex-row justify-between items-center text-xs font-mono opacity-40 gap-4">
+                                <div>NEXARCH DIGITAL © 2025</div>
+                                <div className="flex gap-6 tracking-widest">
+                                    <a href="#" className="hover:opacity-100 transition-opacity">INSTAGRAM</a>
+                                    <a href="#" className="hover:opacity-100 transition-opacity">LINKEDIN</a>
+                                    <a href="#" className="hover:opacity-100 transition-opacity">EMAIL</a>
+                                </div>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
