@@ -1,0 +1,129 @@
+/* style.css */
+
+.float-animation {
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-15px); }
+    100% { transform: translateY(0px); }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.dark .bg-noise {
+    background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+    opacity: 0.05;
+}
+
+.bg-grid {
+    background-size: 40px 40px;
+}
+
+/* --- REVISED PORTFOLIO STYLES (PREMIUM INFINITE SLIDER) --- */
+.perspective-container {
+    width: 100%;
+    overflow: hidden;
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+.workspace-track {
+    display: flex;
+    gap: 2rem;
+    padding: 4rem 0;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    align-items: center;
+}
+
+@media (min-width: 768px) {
+    .workspace-track {
+        gap: 4rem;
+    }
+}
+
+.workspace-card {
+    transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.5s ease;
+    flex-shrink: 0;
+    opacity: 0.4;
+    transform: scale(0.85);
+    will-change: transform, opacity;
+}
+
+.workspace-card.active {
+    opacity: 1 !important;
+    transform: scale(1.05) !important;
+    z-index: 50;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* Modal Animation */
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.modal-animate {
+    animation: modalFadeIn 0.3s ease-out forwards;
+}
+
+/* Fade In Scale Animation for Pricing */
+@keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+}
+.animate-fade-in {
+    animation: fadeInScale 0.4s ease-out forwards;
+}
+
+/* --- PERUBAHAN WARNA TEMA KZORA STUDIO (BIRU KE UNGU) --- */
+:root {
+    /* Warna Ungu Utama (Cool Tech Purple) */
+    --kzora-purple: #6C63FF; 
+    /* Warna Ungu yang sedikit lebih gelap untuk efek hover */
+    --kzora-purple-dark: #5a52d5;
+}
+
+/* Mengubah Tombol Utama */
+.btn,
+.btn-primary,
+.cta-button, 
+button[type="submit"],
+.hero-area .box-1 a { 
+    background-color: var(--kzora-purple) !important;
+    border-color: var(--kzora-purple) !important;
+    color: #ffffff !important;
+    transition: all 0.3s ease;
+}
+
+/* Efek Hover pada Tombol */
+.btn:hover,
+.btn-primary:hover,
+.cta-button:hover,
+button[type="submit"]:hover,
+.hero-area .box-1 a:hover {
+    background-color: var(--kzora-purple-dark) !important;
+    border-color: var(--kzora-purple-dark) !important;
+}
+
+/* Mengubah warna teks link atau aksen lain menjadi ungu */
+a {
+    color: var(--kzora-purple);
+}
+a:hover {
+    color: var(--kzora-purple-dark);
+}
+
+.section-title h2 span,
+.text-primary {
+    color: var(--kzora-purple) !important;
+}
